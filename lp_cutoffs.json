@@ -1,0 +1,102 @@
+{
+    "BR1": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 235,
+            "challenger": 545
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 200,
+            "challenger": 511
+        }
+    },
+    "EUN1": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 243,
+            "challenger": 518
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 530,
+            "challenger": 807
+        }
+    },
+    "EUW1": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 418,
+            "challenger": 701
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 200,
+            "challenger": 500
+        }
+    },
+    "JP1": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 200,
+            "challenger": 500
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 200,
+            "challenger": 500
+        }
+    },
+    "KR": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 501,
+            "challenger": 844
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 200,
+            "challenger": 500
+        }
+    },
+    "LA1": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 200,
+            "challenger": 500
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 513,
+            "challenger": 858
+        }
+    },
+    "LA2": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 200,
+            "challenger": 500
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 416,
+            "challenger": 803
+        }
+    },
+    "NA1": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 219,
+            "challenger": 502
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 200,
+            "challenger": 500
+        }
+    },
+    "OC1": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 200,
+            "challenger": 500
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 200,
+            "challenger": 500
+        }
+    },
+    "RU": {
+        "RANKED_SOLO_5x5": {
+            "grandmaster": 200,
+            "challenger": 500
+        },
+        "RANKED_FLEX_SR": {
+            "grandmaster": 200,
+            "challenger": 500
+        }
+    }
+}
