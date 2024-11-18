@@ -3,7 +3,7 @@ name: Update LP Cutoff
 on:
   schedule:
     - cron: '10 0 * * *'  # Runs at 00:10 UTC every day
-  workflow_dispatch:      # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
   update-json:
@@ -22,15 +22,24 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
 
+    - name: Create directories
+      run: |
+        mkdir -p cdn/current
+        date_dir="cdn/$(date +'%Y-%m-%d')"
+        mkdir -p "$date_dir"
+
     - name: Update cutoff
       run: |
         python update_cutoff.py
+        cp lp_cutoffs.json cdn/current/cutoffs.json
+        date_dir="cdn/$(date +'%Y-%m-%d')"
+        cp lp_cutoffs.json "$date_dir/cutoffs.json"
       env:
-        RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+        API_KEY: ${{ secrets.RIOT_API_KEY }}
     
     - name: Commit and push if changed
       run: |
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
-        git add lp_cutoffs.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update lp_cutoffs.json" && git push)
+        git add cdn/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update cutoffs for $(date +'%Y-%m-%d')" && git push)
