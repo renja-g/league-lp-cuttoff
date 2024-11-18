@@ -1,28 +1,28 @@
 {
     "BR1": {
         "RANKED_SOLO_5x5": {
-            "grandmaster": 235,
-            "challenger": 545
+            "grandmaster": 238,
+            "challenger": 546
         },
         "RANKED_FLEX_SR": {
             "grandmaster": 200,
-            "challenger": 511
+            "challenger": 514
         }
     },
     "EUN1": {
         "RANKED_SOLO_5x5": {
-            "grandmaster": 243,
-            "challenger": 518
+            "grandmaster": 247,
+            "challenger": 520
         },
         "RANKED_FLEX_SR": {
-            "grandmaster": 530,
-            "challenger": 807
+            "grandmaster": 536,
+            "challenger": 809
         }
     },
     "EUW1": {
         "RANKED_SOLO_5x5": {
-            "grandmaster": 418,
-            "challenger": 701
+            "grandmaster": 424,
+            "challenger": 705
         },
         "RANKED_FLEX_SR": {
             "grandmaster": 200,
@@ -41,8 +41,8 @@
     },
     "KR": {
         "RANKED_SOLO_5x5": {
-            "grandmaster": 501,
-            "challenger": 844
+            "grandmaster": 504,
+            "challenger": 853
         },
         "RANKED_FLEX_SR": {
             "grandmaster": 200,
@@ -55,8 +55,8 @@
             "challenger": 500
         },
         "RANKED_FLEX_SR": {
-            "grandmaster": 513,
-            "challenger": 858
+            "grandmaster": 527,
+            "challenger": 864
         }
     },
     "LA2": {
@@ -66,17 +66,17 @@
         },
         "RANKED_FLEX_SR": {
             "grandmaster": 416,
-            "challenger": 803
+            "challenger": 809
         }
     },
     "NA1": {
         "RANKED_SOLO_5x5": {
-            "grandmaster": 219,
-            "challenger": 502
+            "grandmaster": 220,
+            "challenger": 507
         },
         "RANKED_FLEX_SR": {
             "grandmaster": 200,
-            "challenger": 500
+            "challenger": 501
         }
     },
     "OC1": {
