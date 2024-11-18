@@ -5,6 +5,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 RIOT_API_KEY = os.environ.get("RIOT_API_KEY")
+RIOT_API_KEY = "RGAPI-5e3b5be2-ea5d-47f9-ac1e-24a37bea952b"
 
 PLATFORMS = [
     "BR1",
@@ -110,6 +111,16 @@ def fetch_cutoff_data(platform, queue_type, api_key) -> tuple[str, str, int, int
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}. Retrying...")
             time.sleep(5)
+
+    if (
+        chellanger_response.status_code != 200
+        or grandmaster_response.status_code != 200
+        or master_response.status_code != 200
+    ):
+        print(
+            f"Failed to fetch data for {platform}_{queue_type}. Status codes: {chellanger_response.status_code}, {grandmaster_response.status_code}, {master_response.status_code}"
+        )
+        exit(1)
 
     chellanger_data = chellanger_response.json()
     grandmaster_data = grandmaster_response.json()
