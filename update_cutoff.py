@@ -5,7 +5,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 RIOT_API_KEY = os.environ.get("RIOT_API_KEY")
-RIOT_API_KEY = "RGAPI-5e3b5be2-ea5d-47f9-ac1e-24a37bea952b"
 
 PLATFORMS = [
     "BR1",
