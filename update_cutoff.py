@@ -5,6 +5,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 RIOT_API_KEY = os.environ.get("RIOT_API_KEY")
+if RIOT_API_KEY == "":
+    print("RIOT_API_KEY not found")
+    exit(1)
 
 PLATFORMS = [
     "BR1",
