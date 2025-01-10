@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>File Browser</title>
+</head>
+<body>
+  <h1>Repository Files</h1>
+  <ul id="fileList"></ul>
+
+  <script>
+    const repoOwner = "renja-g"; 
+    const repoName = "lol-lp-cutoff";
+    const branch = "main";
+
+    fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/?ref=${branch}`)
+      .then(response => response.json())
+      .then(data => {
+        const fileList = document.getElementById("fileList");
+        data.forEach(item => {
+          const li = document.createElement("li");
+          const link = document.createElement("a");
+          link.href = item.html_url;
+          link.textContent = item.name + (item.type === "dir" ? "/" : "");
+          li.appendChild(link);
+          fileList.appendChild(li);
+        });
+      })
+      .catch(error => console.error(error));
+  </script>
+</body>
+</html>
