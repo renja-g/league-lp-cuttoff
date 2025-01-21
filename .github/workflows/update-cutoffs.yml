@@ -2,7 +2,7 @@ name: Update LP Cutoff
 
 on:
   schedule:
-    - cron: '10 0 * * *'  # Runs at 00:10 UTC every day
+    - cron: '45 7 * * *'  # Runs at 02:45 EST / 07:45 UTC every day
   workflow_dispatch:
 
 jobs:
