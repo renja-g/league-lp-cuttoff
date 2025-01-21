@@ -21,7 +21,7 @@
     },
     "EUW1": {
         "RANKED_SOLO_5x5": {
-            "grandmaster": 265,
+            "grandmaster": 270,
             "challenger": 500
         },
         "RANKED_FLEX_SR": {
@@ -41,8 +41,8 @@
     },
     "KR": {
         "RANKED_SOLO_5x5": {
-            "grandmaster": 307,
-            "challenger": 548
+            "grandmaster": 320,
+            "challenger": 556
         },
         "RANKED_FLEX_SR": {
             "grandmaster": 200,
