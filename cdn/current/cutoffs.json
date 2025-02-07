@@ -1,7 +1,7 @@
 {
     "br1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 621,
+            "challenger": 623,
             "grandmaster": 317
         },
         "RANKED_FLEX_SR": {
@@ -11,8 +11,8 @@
     },
     "eun1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 583,
-            "grandmaster": 332
+            "challenger": 585,
+            "grandmaster": 334
         },
         "RANKED_FLEX_SR": {
             "challenger": 500,
@@ -21,8 +21,8 @@
     },
     "euw1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 798,
-            "grandmaster": 525
+            "challenger": 800,
+            "grandmaster": 526
         },
         "RANKED_FLEX_SR": {
             "challenger": 500,
@@ -41,7 +41,7 @@
     },
     "kr": {
         "RANKED_SOLO_5x5": {
-            "challenger": 880,
+            "challenger": 882,
             "grandmaster": 593
         },
         "RANKED_FLEX_SR": {
@@ -71,7 +71,7 @@
     },
     "na1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 549,
+            "challenger": 550,
             "grandmaster": 264
         },
         "RANKED_FLEX_SR": {

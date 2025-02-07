@@ -62,65 +62,69 @@ func main() {
 		log.Fatal("RIOT_API_KEY environment variable is required")
 	}
 
-	var cfg config
-	err := yaml.Unmarshal(cutoffsYAML, &cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	outputData := make(map[string]RegionData)
-	resultChan := make(chan RegionResult, len(cfg.Regions))
-	var wg sync.WaitGroup
-
-	for region, regionCfg := range cfg.Regions {
-		wg.Add(1)
-		go func(region string, regionCfg Queues) {
-			defer wg.Done()
-			data, err := processRegion(region, regionCfg)
-			resultChan <- RegionResult{Region: region, Data: data, Err: err}
-		}(region, regionCfg)
-	}
-
-	wg.Wait()
-	close(resultChan)
-
-	for result := range resultChan {
-		if result.Err != nil {
-			log.Printf("Error processing region %s: %v", result.Region, result.Err)
-			continue
+	for {
+		var cfg config
+		err := yaml.Unmarshal(cutoffsYAML, &cfg)
+		if err != nil {
+			panic(err)
 		}
-		outputData[result.Region] = result.Data
-		fmt.Printf("Region: %s\n", result.Region)
-		fmt.Printf("Challenger Solo/Duo: %d\n", outputData[result.Region].RANKED_SOLO_5x5.Challenger)
-		fmt.Printf("Grandmaster Solo/Duo: %d\n", outputData[result.Region].RANKED_SOLO_5x5.Grandmaster)
-		fmt.Printf("Challenger Flex: %d\n", outputData[result.Region].RANKED_FLEX_SR.Challenger)
-		fmt.Printf("Grandmaster Flex: %d\n", outputData[result.Region].RANKED_FLEX_SR.Grandmaster)
-		fmt.Println()
-	}
 
-	jsonData, err := json.MarshalIndent(outputData, "", "    ")
-	if err != nil {
-		log.Printf("Error marshaling JSON: %v", err)
-		return
-	}
+		outputData := make(map[string]RegionData)
+		resultChan := make(chan RegionResult, len(cfg.Regions))
+		var wg sync.WaitGroup
 
-	err = os.WriteFile("cdn/current/cutoffs.json", jsonData, 0644)
-	if err != nil {
-		log.Printf("Error writing JSON file to cdn/current: %v", err)
-		return
-	}
+		for region, regionCfg := range cfg.Regions {
+			wg.Add(1)
+			go func(region string, regionCfg Queues) {
+				defer wg.Done()
+				data, err := processRegion(region, regionCfg)
+				resultChan <- RegionResult{Region: region, Data: data, Err: err}
+			}(region, regionCfg)
+		}
 
-	currentDate := time.Now().Format("2006-01-02")
-	err = os.MkdirAll(fmt.Sprintf("cdn/%s", currentDate), 0755)
-	if err != nil {
-		log.Printf("Error creating directory for current date: %v", err)
-		return
-	}
+		wg.Wait()
+		close(resultChan)
 
-	err = os.WriteFile(fmt.Sprintf("cdn/%s/cutoffs.json", currentDate), jsonData, 0644)
-	if err != nil {
-		log.Printf("Error writing JSON file to cdn/%s: %v", currentDate, err)
-		return
+		for result := range resultChan {
+			if result.Err != nil {
+				log.Printf("Error processing region %s: %v", result.Region, result.Err)
+				continue
+			}
+			outputData[result.Region] = result.Data
+			log.Printf("Region: %s\n", result.Region)
+			log.Printf("Challenger Solo/Duo: %d\n", outputData[result.Region].RANKED_SOLO_5x5.Challenger)
+			log.Printf("Grandmaster Solo/Duo: %d\n", outputData[result.Region].RANKED_SOLO_5x5.Grandmaster)
+			log.Printf("Challenger Flex: %d\n", outputData[result.Region].RANKED_FLEX_SR.Challenger)
+			log.Printf("Grandmaster Flex: %d\n", outputData[result.Region].RANKED_FLEX_SR.Grandmaster)
+			log.Println()
+		}
+
+		jsonData, err := json.MarshalIndent(outputData, "", "    ")
+		if err != nil {
+			log.Printf("Error marshaling JSON: %v", err)
+			return
+		}
+
+		err = os.WriteFile("cdn/current/cutoffs.json", jsonData, 0644)
+		if err != nil {
+			log.Printf("Error writing JSON file to cdn/current: %v", err)
+			return
+		}
+
+		currentDate := time.Now().Format("2006-01-02")
+		err = os.MkdirAll(fmt.Sprintf("cdn/%s", currentDate), 0755)
+		if err != nil {
+			log.Printf("Error creating directory for current date: %v", err)
+			return
+		}
+
+		err = os.WriteFile(fmt.Sprintf("cdn/%s/cutoffs.json", currentDate), jsonData, 0644)
+		if err != nil {
+			log.Printf("Error writing JSON file to cdn/%s: %v", currentDate, err)
+			return
+		}
+
+		time.Sleep(1 * time.Minute)
 	}
 }
 

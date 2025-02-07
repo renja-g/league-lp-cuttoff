@@ -1,0 +1,7 @@
+services:
+  cutoff-updater:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./cdn:/app/cdn
