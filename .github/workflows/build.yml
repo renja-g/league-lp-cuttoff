@@ -1,0 +1,28 @@
+name: Build LP Cutoff Binary
+
+on:
+  push:
+    paths:
+      - '**.go'
+      - 'cutoffs.yaml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23.3'
+
+    - name: Build
+      run: go build -o cutoff-updater main.go
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: cutoff-binary
+        path: cutoff-updater

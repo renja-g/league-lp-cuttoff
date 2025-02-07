@@ -8,30 +8,32 @@ on:
 jobs:
   update-json:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v3
-    
-    - name: Set up Go
-      uses: actions/setup-go@v4
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
       with:
-        go-version: '1.23.3'
-    
+        name: cutoff-binary
+        path: bin
+
     - name: Create directories
       run: |
         mkdir -p cdn/current
         date_dir="cdn/$(date +'%Y-%m-%d')"
         mkdir -p "$date_dir"
 
-    - name: Update cutoff
+    - name: Update cutoff (Run Compiled Binary)
       run: |
-        go run main.go
+        chmod +x bin/cutoff-updater
+        bin/cutoff-updater
         cp cutoffs.json cdn/current/cutoffs.json
         date_dir="cdn/$(date +'%Y-%m-%d')"
         cp cutoffs.json "$date_dir/cutoffs.json"
       env:
         RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
-    
+
     - name: Commit and push if changed
       run: |
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
