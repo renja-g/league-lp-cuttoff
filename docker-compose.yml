@@ -5,3 +5,12 @@ services:
       - .env
     volumes:
       - ./cdn:/app/cdn
+    restart: unless-stopped
+
+  fileserver:
+    image: nginx:alpine
+    ports:
+      - "4000:80"
+    volumes:
+      - ./cdn:/usr/share/nginx/html
+    restart: unless-stopped

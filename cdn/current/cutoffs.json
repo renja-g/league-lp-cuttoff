@@ -2,7 +2,7 @@
     "br1": {
         "RANKED_SOLO_5x5": {
             "challenger": 623,
-            "grandmaster": 317
+            "grandmaster": 318
         },
         "RANKED_FLEX_SR": {
             "challenger": 500,
@@ -11,8 +11,8 @@
     },
     "eun1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 585,
-            "grandmaster": 334
+            "challenger": 587,
+            "grandmaster": 335
         },
         "RANKED_FLEX_SR": {
             "challenger": 500,
@@ -41,7 +41,7 @@
     },
     "kr": {
         "RANKED_SOLO_5x5": {
-            "challenger": 882,
+            "challenger": 879,
             "grandmaster": 593
         },
         "RANKED_FLEX_SR": {
@@ -71,7 +71,7 @@
     },
     "na1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 550,
+            "challenger": 552,
             "grandmaster": 264
         },
         "RANKED_FLEX_SR": {
