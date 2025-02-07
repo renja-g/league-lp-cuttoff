@@ -1,7 +1,7 @@
 {
     "br1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 618,
+            "challenger": 619,
             "grandmaster": 316
         },
         "RANKED_FLEX_SR": {
@@ -21,8 +21,8 @@
     },
     "euw1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 793,
-            "grandmaster": 521
+            "challenger": 794,
+            "grandmaster": 520
         },
         "RANKED_FLEX_SR": {
             "challenger": 500,
