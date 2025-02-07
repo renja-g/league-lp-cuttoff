@@ -17,8 +17,6 @@ jobs:
       with:
         name: cutoff-binary
         path: bin
-        merge-multiple: false
-        repository: renja-g/lol-lp-cutoff
 
     - name: Create directories
       run: |
