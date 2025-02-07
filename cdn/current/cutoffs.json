@@ -11,7 +11,7 @@
     },
     "eun1": {
         "RANKED_SOLO_5x5": {
-            "challenger": 579,
+            "challenger": 580,
             "grandmaster": 330
         },
         "RANKED_FLEX_SR": {
@@ -41,8 +41,8 @@
     },
     "kr": {
         "RANKED_SOLO_5x5": {
-            "challenger": 877,
-            "grandmaster": 587
+            "challenger": 879,
+            "grandmaster": 586
         },
         "RANKED_FLEX_SR": {
             "challenger": 500,
