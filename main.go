@@ -11,6 +11,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -68,7 +69,7 @@ func main() {
 	}
 
 	outputData := make(map[string]RegionData)
-	resultChan := make(chan RegionResult, len(cfg.Regions)) // Buffered channel for results
+	resultChan := make(chan RegionResult, len(cfg.Regions))
 	var wg sync.WaitGroup
 
 	for region, regionCfg := range cfg.Regions {
@@ -81,7 +82,7 @@ func main() {
 	}
 
 	wg.Wait()
-	close(resultChan) // Close channel after all goroutines are done
+	close(resultChan)
 
 	for result := range resultChan {
 		if result.Err != nil {
@@ -97,16 +98,28 @@ func main() {
 		fmt.Println()
 	}
 
-	// Save data to JSON file
 	jsonData, err := json.MarshalIndent(outputData, "", "    ")
 	if err != nil {
 		log.Printf("Error marshaling JSON: %v", err)
 		return
 	}
 
-	err = os.WriteFile("cutoffs.json", jsonData, 0644)
+	err = os.WriteFile("cdn/current/cutoffs.json", jsonData, 0644)
 	if err != nil {
-		log.Printf("Error writing JSON file: %v", err)
+		log.Printf("Error writing JSON file to cdn/current: %v", err)
+		return
+	}
+
+	currentDate := time.Now().Format("2006-01-02")
+	err = os.MkdirAll(fmt.Sprintf("cdn/%s", currentDate), 0755)
+	if err != nil {
+		log.Printf("Error creating directory for current date: %v", err)
+		return
+	}
+
+	err = os.WriteFile(fmt.Sprintf("cdn/%s/cutoffs.json", currentDate), jsonData, 0644)
+	if err != nil {
+		log.Printf("Error writing JSON file to cdn/%s: %v", currentDate, err)
 		return
 	}
 }
@@ -119,7 +132,7 @@ func processRegion(region string, regionCfg Queues) (RegionData, error) {
 		Err        error
 	}
 
-	resultChan := make(chan LeagueDataResult, 6) // Buffered channel for 6 league data fetches
+	resultChan := make(chan LeagueDataResult, 6)
 	var wg sync.WaitGroup
 
 	leaguesToFetch := []struct {
@@ -146,19 +159,18 @@ func processRegion(region string, regionCfg Queues) (RegionData, error) {
 	wg.Wait()
 	close(resultChan)
 
-	leagueResponses := make(map[string]LeagueResponse) // Map to store LeagueResponses by QueueType
+	leagueResponses := make(map[string]LeagueResponse)
 	var fetchErrors []error
 
 	for result := range resultChan {
 		if result.Err != nil {
 			fetchErrors = append(fetchErrors, fmt.Errorf("fetchLeagueData %s %s for %s failed: %w", result.LeagueType, result.QueueType, region, result.Err))
-			continue // Continue processing other results even if one fetch fails
+			continue
 		}
-		leagueResponses[result.QueueType+"_"+result.LeagueType] = result.Response // Store response, using QueueType_LeagueType as key
+		leagueResponses[result.QueueType+"_"+result.LeagueType] = result.Response
 	}
 
 	if len(fetchErrors) > 0 {
-		// Aggregate fetch errors and return
 		combinedError := fmt.Errorf("errors fetching league data for region %s:", region)
 		for _, err := range fetchErrors {
 			combinedError = fmt.Errorf("%w\n%v", combinedError, err)
@@ -176,7 +188,6 @@ func processRegion(region string, regionCfg Queues) (RegionData, error) {
 	soloLadder := append(append(CSoloLeague.Entries, GMSoloLeague.Entries...), MSoloLeague.Entries...)
 	flexLadder := append(append(CFlexLeague.Entries, GMFlexLeague.Entries...), MFlexLeague.Entries...)
 
-	// Sort entries by LP in descending order
 	sort.Slice(soloLadder, func(i, j int) bool {
 		return soloLadder[i].LeaguePoints > soloLadder[j].LeaguePoints
 	})
@@ -184,7 +195,6 @@ func processRegion(region string, regionCfg Queues) (RegionData, error) {
 		return flexLadder[i].LeaguePoints > flexLadder[j].LeaguePoints
 	})
 
-	// Handle small league lists and get LP thresholds
 	soloChallenger := minChallengerLP
 	soloGrandmaster := minGrandmasterLP
 	flexChallenger := minChallengerLP
