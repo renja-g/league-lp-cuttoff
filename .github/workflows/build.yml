@@ -5,6 +5,7 @@ on:
     paths:
       - '**.go'
       - 'cutoffs.yaml'
+  workflow_dispatch:
 
 jobs:
   build:
