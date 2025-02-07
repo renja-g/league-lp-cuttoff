@@ -1,0 +1,98 @@
+br1:
+    solo_duo:
+        challenger: 200
+        grandmaster: 500
+    flex:
+        challenger: 200
+        grandmaster: 500
+eun1:
+    solo_duo:
+        challenger: 200
+        grandmaster: 500
+    flex:
+        challenger: 50
+        grandmaster: 100
+euw1:
+    solo_duo:
+        challenger: 300
+        grandmaster: 700
+    flex:
+        challenger: 200
+        grandmaster: 500
+jp1:
+    solo_duo:
+        challenger: 50
+        grandmaster: 100
+    flex:
+        challenger: 50
+        grandmaster: 100
+kr:    
+    solo_duo:
+        challenger: 300
+        grandmaster: 700
+    flex:
+        challenger: 200
+        grandmaster: 500
+la1:
+    solo_duo:
+        challenger: 200
+        grandmaster: 500
+    flex:
+        challenger: 100
+        grandmaster: 50
+la2:
+    solo_duo:
+        challenger: 200
+        grandmaster: 500
+    flex:
+        challenger: 100
+        grandmaster: 50
+na1:
+    solo_duo:
+        challenger: 300
+        grandmaster: 700
+    flex:
+        challenger: 100
+        grandmaster: 50
+oc1:
+    solo_duo:
+        challenger: 300
+        grandmaster: 700
+    flex:
+        challenger: 200
+        grandmaster: 500
+tr1:
+    solo_duo:
+        challenger: 200
+        grandmaster: 500
+    flex:
+        challenger: 50
+        grandmaster: 100
+ru:
+    solo_duo:
+        challenger: 50
+        grandmaster: 100
+    flex:
+        challenger: 50
+        grandmaster: 100
+sg2:
+    solo_duo:
+        challenger: 300
+        grandmaster: 700
+    flex:
+        challenger: 50
+        grandmaster: 100
+tw2:
+    solo_duo:
+        challenger: 300
+        grandmaster: 700
+    flex:
+        challenger: 50
+        grandmaster: 100
+vn2:
+    solo_duo:
+        challenger: 300
+        grandmaster: 700
+    flex:
+        challenger: 50
+        grandmaster: 100
