@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -30,19 +31,28 @@ type config struct {
 	Regions map[string]Queues `yaml:",inline"`
 }
 
+type LeagueEntry struct {
+	LeaguePoints int `json:"leaguePoints"`
+}
+
 type LeagueResponse struct {
-	Entries []struct {
-		LeaguePoints int `json:"leaguePoints"`
-	} `json:"entries"`
+	Entries []LeagueEntry `json:"entries"`
 }
 
 //go:embed cutoffs.yaml
 var cutoffsYAML []byte
 
 const (
-	baseUrl          = "api.riotgames.com"
+	baseURL          = "api.riotgames.com"
 	minChallengerLP  = 500
 	minGrandmasterLP = 200
+
+	queueTypeSoloDuo = "RANKED_SOLO_5x5"
+	queueTypeFlex    = "RANKED_FLEX_SR"
+
+	leagueTypeChallenger  = "challengerleagues"
+	leagueTypeGrandmaster = "grandmasterleagues"
+	leagueTypeMaster      = "masterleagues"
 )
 
 type RegionData struct {
@@ -56,19 +66,25 @@ type RegionResult struct {
 	Err    error
 }
 
+type LeagueDataResult struct {
+	LeagueType string
+	QueueType  string
+	Response   LeagueResponse
+	Err        error
+}
+
 func main() {
 	apiKey := os.Getenv("RIOT_API_KEY")
 	if apiKey == "" {
 		log.Fatal("RIOT_API_KEY environment variable is required")
 	}
 
-	for {
-		var cfg config
-		err := yaml.Unmarshal(cutoffsYAML, &cfg)
-		if err != nil {
-			panic(err)
-		}
+	var cfg config
+	if err := yaml.Unmarshal(cutoffsYAML, &cfg); err != nil {
+		log.Fatalf("Failed to unmarshal cutoffs.yaml: %v", err)
+	}
 
+	for {
 		outputData := make(map[string]RegionData)
 		resultChan := make(chan RegionResult, len(cfg.Regions))
 		var wg sync.WaitGroup
@@ -77,7 +93,7 @@ func main() {
 			wg.Add(1)
 			go func(region string, regionCfg Queues) {
 				defer wg.Done()
-				data, err := processRegion(region, regionCfg)
+				data, err := processRegion(region, regionCfg, apiKey)
 				resultChan <- RegionResult{Region: region, Data: data, Err: err}
 			}(region, regionCfg)
 		}
@@ -91,89 +107,87 @@ func main() {
 				continue
 			}
 			outputData[result.Region] = result.Data
-			log.Printf("Region: %s\n", result.Region)
-			log.Printf("Challenger Solo/Duo: %d\n", outputData[result.Region].RANKED_SOLO_5x5.Challenger)
-			log.Printf("Grandmaster Solo/Duo: %d\n", outputData[result.Region].RANKED_SOLO_5x5.Grandmaster)
-			log.Printf("Challenger Flex: %d\n", outputData[result.Region].RANKED_FLEX_SR.Challenger)
-			log.Printf("Grandmaster Flex: %d\n", outputData[result.Region].RANKED_FLEX_SR.Grandmaster)
-			log.Println()
+			logRegionCutoffs(result.Region, result.Data)
 		}
 
-		jsonData, err := json.MarshalIndent(outputData, "", "    ")
-		if err != nil {
-			log.Printf("Error marshaling JSON: %v", err)
-			return
-		}
-
-		currentCutoffsPath := "cdn/current/cutoffs.json"
-		currentCutoffsDir := "cdn/current"
-		if _, err := os.Stat(currentCutoffsDir); os.IsNotExist(err) {
-			err = os.MkdirAll(currentCutoffsDir, 0755)
-			if err != nil {
-				log.Printf("Error creating directory %s: %v", currentCutoffsDir, err)
-				return
-			}
-		}
-
-		if _, err := os.Stat(currentCutoffsPath); os.IsNotExist(err) {
-			err = os.WriteFile(currentCutoffsPath, jsonData, 0644)
-			if err != nil {
-				log.Printf("Error writing JSON file to %s: %v", currentCutoffsPath, err)
-				return
-			}
-		}
-
-		currentDate := time.Now().UTC().Format("2006-01-02")
-		dirPath := fmt.Sprintf("cdn/%s", currentDate)
-		if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-			err = os.MkdirAll(dirPath, 0755)
-			if err != nil {
-				log.Printf("Error creating directory for current date: %v", err)
-				return
-			}
-		}
-
-		filePath := fmt.Sprintf("cdn/%s/cutoffs.json", currentDate)
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			err = os.WriteFile(filePath, jsonData, 0644)
-			if err != nil {
-				log.Printf("Error writing JSON file to %s: %v", filePath, err)
-				return
-			}
+		if err := writeCutoffsToFiles(outputData); err != nil {
+			log.Printf("Error writing cutoffs to files: %v", err)
 		}
 
 		time.Sleep(1 * time.Minute)
 	}
 }
 
-func processRegion(region string, regionCfg Queues) (RegionData, error) {
-	type LeagueDataResult struct {
-		LeagueType string
-		QueueType  string
-		Response   LeagueResponse
-		Err        error
+func logRegionCutoffs(region string, data RegionData) {
+	log.Printf("Region: %s\n", region)
+	log.Printf("Challenger Solo/Duo: %d\n", data.RANKED_SOLO_5x5.Challenger)
+	log.Printf("Grandmaster Solo/Duo: %d\n", data.RANKED_SOLO_5x5.Grandmaster)
+	log.Printf("Challenger Flex: %d\n", data.RANKED_FLEX_SR.Challenger)
+	log.Printf("Grandmaster Flex: %d\n", data.RANKED_FLEX_SR.Grandmaster)
+	log.Println()
+}
+
+func writeCutoffsToFiles(outputData map[string]RegionData) error {
+	jsonData, err := json.MarshalIndent(outputData, "", "    ")
+	if err != nil {
+		return fmt.Errorf("marshal JSON: %w", err)
 	}
 
-	resultChan := make(chan LeagueDataResult, 6)
-	var wg sync.WaitGroup
+	if err := ensureDir("cdn/current"); err != nil {
+		return err
+	}
+	if err := writeFile("cdn/current/cutoffs.json", jsonData); err != nil {
+		return err
+	}
 
-	leaguesToFetch := []struct {
+	currentDate := time.Now().UTC().Format("2006-01-02")
+	dirPath := fmt.Sprintf("cdn/%s", currentDate)
+	if err := ensureDir(dirPath); err != nil {
+		return err
+	}
+	if err := writeFile(fmt.Sprintf("%s/cutoffs.json", dirPath), jsonData); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ensureDir(dirPath string) error {
+	if _, err := os.Stat(dirPath); errors.Is(err, os.ErrNotExist) {
+		if err := os.MkdirAll(dirPath, 0755); err != nil {
+			return fmt.Errorf("create directory %s: %w", dirPath, err)
+		}
+	}
+	return nil
+}
+
+func writeFile(filePath string, data []byte) error {
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return fmt.Errorf("write file to %s: %w", filePath, err)
+	}
+	return nil
+}
+
+func processRegion(region string, regionCfg Queues, apiKey string) (RegionData, error) {
+	leagueTypes := []struct {
 		LeagueType string
 		QueueType  string
 	}{
-		{"challengerleagues", "RANKED_SOLO_5x5"},
-		{"grandmasterleagues", "RANKED_SOLO_5x5"},
-		{"masterleagues", "RANKED_SOLO_5x5"},
-		{"challengerleagues", "RANKED_FLEX_SR"},
-		{"grandmasterleagues", "RANKED_FLEX_SR"},
-		{"masterleagues", "RANKED_FLEX_SR"},
+		{leagueTypeChallenger, queueTypeSoloDuo},
+		{leagueTypeGrandmaster, queueTypeSoloDuo},
+		{leagueTypeMaster, queueTypeSoloDuo},
+		{leagueTypeChallenger, queueTypeFlex},
+		{leagueTypeGrandmaster, queueTypeFlex},
+		{leagueTypeMaster, queueTypeFlex},
 	}
 
-	for _, leagueFetch := range leaguesToFetch {
+	resultChan := make(chan LeagueDataResult, len(leagueTypes))
+	var wg sync.WaitGroup
+
+	for _, leagueFetch := range leagueTypes {
 		wg.Add(1)
 		go func(leagueType, queueType string) {
 			defer wg.Done()
-			resp, err := fetchLeagueData(region, leagueType, queueType)
+			resp, err := fetchLeagueData(region, leagueType, queueType, apiKey)
 			resultChan <- LeagueDataResult{LeagueType: leagueType, QueueType: queueType, Response: resp, Err: err}
 		}(leagueFetch.LeagueType, leagueFetch.QueueType)
 	}
@@ -181,6 +195,32 @@ func processRegion(region string, regionCfg Queues) (RegionData, error) {
 	wg.Wait()
 	close(resultChan)
 
+	leagueResponses, fetchErrors := processLeagueDataResults(region, resultChan)
+	if fetchErrors != nil {
+		return RegionData{}, fetchErrors
+	}
+
+	soloLadder := createLadder(
+		leagueResponses[queueTypeSoloDuo+"_"+leagueTypeChallenger],
+		leagueResponses[queueTypeSoloDuo+"_"+leagueTypeGrandmaster],
+		leagueResponses[queueTypeSoloDuo+"_"+leagueTypeMaster],
+	)
+	flexLadder := createLadder(
+		leagueResponses[queueTypeFlex+"_"+leagueTypeChallenger],
+		leagueResponses[queueTypeFlex+"_"+leagueTypeGrandmaster],
+		leagueResponses[queueTypeFlex+"_"+leagueTypeMaster],
+	)
+
+	soloCutoffs := calculateCutoffs(soloLadder, regionCfg.SoloDuo)
+	flexCutoffs := calculateCutoffs(flexLadder, regionCfg.Flex)
+
+	return RegionData{
+		RANKED_SOLO_5x5: soloCutoffs,
+		RANKED_FLEX_SR:  flexCutoffs,
+	}, nil
+}
+
+func processLeagueDataResults(region string, resultChan <-chan LeagueDataResult) (map[string]LeagueResponse, error) {
 	leagueResponses := make(map[string]LeagueResponse)
 	var fetchErrors []error
 
@@ -197,63 +237,41 @@ func processRegion(region string, regionCfg Queues) (RegionData, error) {
 		for _, err := range fetchErrors {
 			combinedError = fmt.Errorf("%w\n%v", combinedError, err)
 		}
-		return RegionData{}, combinedError
+		return nil, combinedError
 	}
-
-	CSoloLeague := leagueResponses["RANKED_SOLO_5x5_challengerleagues"]
-	GMSoloLeague := leagueResponses["RANKED_SOLO_5x5_grandmasterleagues"]
-	MSoloLeague := leagueResponses["RANKED_SOLO_5x5_masterleagues"]
-	CFlexLeague := leagueResponses["RANKED_FLEX_SR_challengerleagues"]
-	GMFlexLeague := leagueResponses["RANKED_FLEX_SR_grandmasterleagues"]
-	MFlexLeague := leagueResponses["RANKED_FLEX_SR_masterleagues"]
-
-	soloLadder := append(append(CSoloLeague.Entries, GMSoloLeague.Entries...), MSoloLeague.Entries...)
-	flexLadder := append(append(CFlexLeague.Entries, GMFlexLeague.Entries...), MFlexLeague.Entries...)
-
-	sort.Slice(soloLadder, func(i, j int) bool {
-		return soloLadder[i].LeaguePoints > soloLadder[j].LeaguePoints
-	})
-	sort.Slice(flexLadder, func(i, j int) bool {
-		return flexLadder[i].LeaguePoints > flexLadder[j].LeaguePoints
-	})
-
-	soloChallenger := minChallengerLP
-	soloGrandmaster := minGrandmasterLP
-	flexChallenger := minChallengerLP
-	flexGrandmaster := minGrandmasterLP
-
-	if len(soloLadder) >= regionCfg.SoloDuo.Challenger {
-		soloChallenger = int(math.Max(float64(minChallengerLP), float64(soloLadder[regionCfg.SoloDuo.Challenger-1].LeaguePoints)))
-	}
-	if len(soloLadder) >= regionCfg.SoloDuo.Challenger+regionCfg.SoloDuo.Grandmaster {
-		soloGrandmaster = int(math.Max(float64(minGrandmasterLP), float64(soloLadder[regionCfg.SoloDuo.Challenger+regionCfg.SoloDuo.Grandmaster-1].LeaguePoints)))
-	}
-
-	if len(flexLadder) >= regionCfg.Flex.Challenger {
-		flexChallenger = int(math.Max(float64(minChallengerLP), float64(flexLadder[regionCfg.Flex.Challenger-1].LeaguePoints)))
-	}
-	if len(flexLadder) >= regionCfg.Flex.Challenger+regionCfg.Flex.Grandmaster {
-		flexGrandmaster = int(math.Max(float64(minGrandmasterLP), float64(flexLadder[regionCfg.Flex.Challenger+regionCfg.Flex.Grandmaster-1].LeaguePoints)))
-	}
-
-	return RegionData{
-		RANKED_SOLO_5x5: Cutoffs{
-			Challenger:  int(soloChallenger),
-			Grandmaster: int(soloGrandmaster),
-		},
-		RANKED_FLEX_SR: Cutoffs{
-			Challenger:  int(flexChallenger),
-			Grandmaster: int(flexGrandmaster),
-		},
-	}, nil
+	return leagueResponses, nil
 }
 
-func fetchLeagueData(region string, league string, queueType string) (LeagueResponse, error) {
-	apiKey := os.Getenv("RIOT_API_KEY")
-	url := fmt.Sprintf("https://%s.%s/lol/league/v4/%s/by-queue/%s?api_key=%s", region, baseUrl, league, queueType, apiKey)
+func createLadder(challengerLeague, grandmasterLeague, masterLeague LeagueResponse) []LeagueEntry {
+	ladder := append(append(challengerLeague.Entries, grandmasterLeague.Entries...), masterLeague.Entries...)
+	sort.Slice(ladder, func(i, j int) bool {
+		return ladder[i].LeaguePoints > ladder[j].LeaguePoints
+	})
+	return ladder
+}
+
+func calculateCutoffs(ladder []LeagueEntry, cutoffsConfig Cutoffs) Cutoffs {
+	challenger := minChallengerLP
+	grandmaster := minGrandmasterLP
+
+	if len(ladder) >= cutoffsConfig.Challenger {
+		challenger = int(math.Max(float64(minChallengerLP), float64(ladder[cutoffsConfig.Challenger-1].LeaguePoints)))
+	}
+	if len(ladder) >= cutoffsConfig.Challenger+cutoffsConfig.Grandmaster {
+		grandmaster = int(math.Max(float64(minGrandmasterLP), float64(ladder[cutoffsConfig.Challenger+cutoffsConfig.Grandmaster-1].LeaguePoints)))
+	}
+
+	return Cutoffs{
+		Challenger:  challenger,
+		Grandmaster: grandmaster,
+	}
+}
+
+func fetchLeagueData(region string, league string, queueType string, apiKey string) (LeagueResponse, error) {
+	url := fmt.Sprintf("https://%s.%s/lol/league/v4/%s/by-queue/%s?api_key=%s", region, baseURL, league, queueType, apiKey)
 	resp, err := http.Get(url)
 	if err != nil {
-		return LeagueResponse{}, err
+		return LeagueResponse{}, fmt.Errorf("HTTP GET error for %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
@@ -263,12 +281,12 @@ func fetchLeagueData(region string, league string, queueType string) (LeagueResp
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return LeagueResponse{}, err
+		return LeagueResponse{}, fmt.Errorf("failed to read response body for %s: %w", url, err)
 	}
 
 	var leagueData LeagueResponse
 	if err := json.Unmarshal(body, &leagueData); err != nil {
-		return LeagueResponse{}, fmt.Errorf("failed to unmarshal response body: %w", err)
+		return LeagueResponse{}, fmt.Errorf("failed to unmarshal response body for %s: %w - body: %s", url, err, string(body))
 	}
 
 	return leagueData, nil
