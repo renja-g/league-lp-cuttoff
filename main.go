@@ -105,23 +105,41 @@ func main() {
 			return
 		}
 
-		err = os.WriteFile("cdn/current/cutoffs.json", jsonData, 0644)
-		if err != nil {
-			log.Printf("Error writing JSON file to cdn/current: %v", err)
-			return
+		currentCutoffsPath := "cdn/current/cutoffs.json"
+		currentCutoffsDir := "cdn/current"
+		if _, err := os.Stat(currentCutoffsDir); os.IsNotExist(err) {
+			err = os.MkdirAll(currentCutoffsDir, 0755)
+			if err != nil {
+				log.Printf("Error creating directory %s: %v", currentCutoffsDir, err)
+				return
+			}
 		}
 
-		currentDate := time.Now().Format("2006-01-02")
-		err = os.MkdirAll(fmt.Sprintf("cdn/%s", currentDate), 0755)
-		if err != nil {
-			log.Printf("Error creating directory for current date: %v", err)
-			return
+		if _, err := os.Stat(currentCutoffsPath); os.IsNotExist(err) {
+			err = os.WriteFile(currentCutoffsPath, jsonData, 0644)
+			if err != nil {
+				log.Printf("Error writing JSON file to %s: %v", currentCutoffsPath, err)
+				return
+			}
 		}
 
-		err = os.WriteFile(fmt.Sprintf("cdn/%s/cutoffs.json", currentDate), jsonData, 0644)
-		if err != nil {
-			log.Printf("Error writing JSON file to cdn/%s: %v", currentDate, err)
-			return
+		currentDate := time.Now().UTC().Format("2006-01-02")
+		dirPath := fmt.Sprintf("cdn/%s", currentDate)
+		if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+			err = os.MkdirAll(dirPath, 0755)
+			if err != nil {
+				log.Printf("Error creating directory for current date: %v", err)
+				return
+			}
+		}
+
+		filePath := fmt.Sprintf("cdn/%s/cutoffs.json", currentDate)
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			err = os.WriteFile(filePath, jsonData, 0644)
+			if err != nil {
+				log.Printf("Error writing JSON file to %s: %v", filePath, err)
+				return
+			}
 		}
 
 		time.Sleep(1 * time.Minute)
