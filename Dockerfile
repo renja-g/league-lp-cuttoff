@@ -9,6 +9,7 @@ FROM alpine:latest
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 COPY --from=builder /app/app .
+RUN mkdir -p /app/cdn && chown -R appuser:appgroup /app
 RUN chown appuser:appgroup app
 USER appuser
 VOLUME /app/cdn

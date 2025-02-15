@@ -180,24 +180,25 @@ func processRegion(region string, regionCfg Queues, apiKey string) (RegionData, 
 		{leagueTypeMaster, queueTypeFlex},
 	}
 
-	resultChan := make(chan LeagueDataResult, len(leagueTypes))
-	var wg sync.WaitGroup
+	var fetchErrors []error
+	leagueResponses := make(map[string]LeagueResponse)
 
 	for _, leagueFetch := range leagueTypes {
-		wg.Add(1)
-		go func(leagueType, queueType string) {
-			defer wg.Done()
-			resp, err := fetchLeagueData(region, leagueType, queueType, apiKey)
-			resultChan <- LeagueDataResult{LeagueType: leagueType, QueueType: queueType, Response: resp, Err: err}
-		}(leagueFetch.LeagueType, leagueFetch.QueueType)
+		resp, err := fetchLeagueData(region, leagueFetch.LeagueType, leagueFetch.QueueType, apiKey)
+		if err != nil {
+			fetchErrors = append(fetchErrors, fmt.Errorf("fetchLeagueData %s %s for %s failed: %w",
+				leagueFetch.LeagueType, leagueFetch.QueueType, region, err))
+		} else {
+			leagueResponses[leagueFetch.QueueType+"_"+leagueFetch.LeagueType] = resp
+		}
 	}
 
-	wg.Wait()
-	close(resultChan)
-
-	leagueResponses, fetchErrors := processLeagueDataResults(region, resultChan)
-	if fetchErrors != nil {
-		return RegionData{}, fetchErrors
+	if len(fetchErrors) > 0 {
+		combinedError := fmt.Errorf("errors fetching league data for region %s:", region)
+		for _, err := range fetchErrors {
+			combinedError = fmt.Errorf("%w\n%v", combinedError, err)
+		}
+		return RegionData{}, combinedError
 	}
 
 	soloLadder := createLadder(
@@ -218,28 +219,6 @@ func processRegion(region string, regionCfg Queues, apiKey string) (RegionData, 
 		RANKED_SOLO_5x5: soloCutoffs,
 		RANKED_FLEX_SR:  flexCutoffs,
 	}, nil
-}
-
-func processLeagueDataResults(region string, resultChan <-chan LeagueDataResult) (map[string]LeagueResponse, error) {
-	leagueResponses := make(map[string]LeagueResponse)
-	var fetchErrors []error
-
-	for result := range resultChan {
-		if result.Err != nil {
-			fetchErrors = append(fetchErrors, fmt.Errorf("fetchLeagueData %s %s for %s failed: %w", result.LeagueType, result.QueueType, region, result.Err))
-			continue
-		}
-		leagueResponses[result.QueueType+"_"+result.LeagueType] = result.Response
-	}
-
-	if len(fetchErrors) > 0 {
-		combinedError := fmt.Errorf("errors fetching league data for region %s:", region)
-		for _, err := range fetchErrors {
-			combinedError = fmt.Errorf("%w\n%v", combinedError, err)
-		}
-		return nil, combinedError
-	}
-	return leagueResponses, nil
 }
 
 func createLadder(challengerLeague, grandmasterLeague, masterLeague LeagueResponse) []LeagueEntry {
